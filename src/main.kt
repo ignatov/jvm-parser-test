@@ -2,7 +2,9 @@ import com.intellij.core.CoreApplicationEnvironment
 import com.intellij.core.CoreJavaPsiImplementationHelper
 import com.intellij.core.CoreProjectEnvironment
 import com.intellij.ide.highlighter.JavaFileType
+import com.intellij.lang.LanguageASTFactory
 import com.intellij.lang.MetaLanguage
+import com.intellij.lang.java.JavaLanguage
 import com.intellij.lang.java.JavaParserDefinition
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.extensions.Extensions
@@ -13,6 +15,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.local.CoreLocalFileSystem
 import com.intellij.psi.*
 import com.intellij.psi.impl.JavaPsiImplementationHelper
+import com.intellij.psi.impl.source.tree.CoreJavaASTFactory
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.parsing.KotlinParserDefinition
 import org.jetbrains.kotlin.psi.KtClass
@@ -54,7 +57,8 @@ internal fun setup(): PsiSetup {
 
     val project = projectEnvironment.project
 
-    projectEnvironment.registerProjectComponent(JavaPsiImplementationHelper::class.java, CoreJavaPsiImplementationHelper(project))
+    project.registerService(JavaPsiImplementationHelper::class.java, CoreJavaPsiImplementationHelper(project))
+    LanguageASTFactory.INSTANCE.addExplicitExtension(JavaLanguage.INSTANCE, CoreJavaASTFactory())
 
     return PsiSetup(applicationEnvironment, projectEnvironment, project, disposable)
 }
@@ -100,12 +104,12 @@ fun main(args: Array<String>) {
             }
         }){})
 
-//        val createFile = createFile("testData/test.java")
-//        createFile.acceptChildren(object : JavaElementVisitor() {
-//            override fun visitClass(aClass: PsiClass?) {
-//                println(aClass?.name)
-//                super.visitClass(aClass)
-//            }
-//        })
+        val createFile = createFile("testData/test.java")
+        createFile.acceptChildren(object : JavaElementVisitor() {
+            override fun visitClass(aClass: PsiClass?) {
+                println(aClass?.name)
+                super.visitClass(aClass)
+            }
+        })
     }
 }

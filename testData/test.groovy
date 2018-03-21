@@ -1,6 +1,6 @@
 package test
 
-public class test {
+public class GroovyTest {
     public static void main(String[] args) {
 
     }
