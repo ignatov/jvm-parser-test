@@ -8,7 +8,12 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
-    <orderEntry type="library" name="kotlin-compiler" level="project" />
     <orderEntry type="library" name="kotlin-script-runtime" level="project" />
+    <orderEntry type="library" name="Groovy" level="project" />
+    <orderEntry type="library" name="intellij-core-analysis" level="project" />
+    <orderEntry type="library" name="util" level="project" />
+    <orderEntry type="library" name="trove4j" level="project" />
+    <orderEntry type="library" name="kotlin-compiler" level="project" />
+    <orderEntry type="library" name="Groovy (2)" level="project" />
   </component>
 </module>

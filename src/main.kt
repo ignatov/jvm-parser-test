@@ -1,6 +1,9 @@
 import com.intellij.core.CoreApplicationEnvironment
+import com.intellij.core.CoreJavaPsiImplementationHelper
 import com.intellij.core.CoreProjectEnvironment
+import com.intellij.ide.highlighter.JavaFileType
 import com.intellij.lang.MetaLanguage
+import com.intellij.lang.java.JavaParserDefinition
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
@@ -8,15 +11,19 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.local.CoreLocalFileSystem
-import com.intellij.psi.PsiManager
-import com.intellij.psi.SingleRootFileViewProvider
+import com.intellij.psi.*
+import com.intellij.psi.impl.JavaPsiImplementationHelper
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.parsing.KotlinParserDefinition
 import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtVisitorVoid
 import org.jetbrains.kotlin.script.KotlinScriptDefinition
 import org.jetbrains.kotlin.script.ScriptDefinitionProvider
+import org.jetbrains.plugins.groovy.GroovyFileType
+import org.jetbrains.plugins.groovy.lang.parser.GroovyParserDefinition
+import org.jetbrains.plugins.groovy.lang.psi.GroovyElementVisitor
+import org.jetbrains.plugins.groovy.lang.psi.GroovyPsiElementVisitor
+import org.jetbrains.plugins.groovy.lang.psi.api.statements.typedef.GrClassDefinition
 import java.io.File
 
 internal data class PsiSetup(
@@ -39,8 +46,16 @@ internal fun setup(): PsiSetup {
     applicationEnvironment.registerFileType(KotlinFileType.INSTANCE, "kt")
     applicationEnvironment.registerParserDefinition(KotlinParserDefinition())
 
+    applicationEnvironment.registerFileType(GroovyFileType.GROOVY_FILE_TYPE, "groovy")
+    applicationEnvironment.registerParserDefinition(GroovyParserDefinition())
+
+    applicationEnvironment.registerFileType(JavaFileType.INSTANCE, "java")
+    applicationEnvironment.registerParserDefinition(JavaParserDefinition())
 
     val project = projectEnvironment.project
+
+    projectEnvironment.registerProjectComponent(JavaPsiImplementationHelper::class.java, CoreJavaPsiImplementationHelper(project))
+
     return PsiSetup(applicationEnvironment, projectEnvironment, project, disposable)
 }
 
@@ -66,15 +81,31 @@ fun main(args: Array<String>) {
         val psiManager = PsiManager.getInstance(project)
         val vfm = VirtualFileManager.getInstance()
 
-        val io = File("src/main.kt")
-        val vFile = (vfm.getFileSystem(StandardFileSystems.FILE_PROTOCOL) as CoreLocalFileSystem).findFileByIoFile(io)
-        val file = SingleRootFileViewProvider(psiManager, vFile!!).allFiles.filterIsInstance<KtFile>().first()
+        fun createFile(path: String): PsiFile {
+            val vFile = (vfm.getFileSystem(StandardFileSystems.FILE_PROTOCOL) as CoreLocalFileSystem).findFileByIoFile(File(path))
+            return SingleRootFileViewProvider(psiManager, vFile!!).allFiles.first()
+        }
 
-        file.acceptChildren(object : KtVisitorVoid() {
+        createFile("src/main.kt").acceptChildren(object : KtVisitorVoid() {
             override fun visitClass(klass: KtClass) {
                 println(klass.name)
                 super.visitClass(klass)
             }
         })
+
+        createFile("testData/test.groovy").acceptChildren(object : GroovyPsiElementVisitor(object : GroovyElementVisitor() {
+            override fun visitClassDefinition(classDefinition: GrClassDefinition) {
+                println(classDefinition.name)
+                super.visitClassDefinition(classDefinition)
+            }
+        }){})
+
+//        val createFile = createFile("testData/test.java")
+//        createFile.acceptChildren(object : JavaElementVisitor() {
+//            override fun visitClass(aClass: PsiClass?) {
+//                println(aClass?.name)
+//                super.visitClass(aClass)
+//            }
+//        })
     }
 }
