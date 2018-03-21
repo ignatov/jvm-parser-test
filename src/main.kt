@@ -18,15 +18,15 @@ import com.intellij.psi.impl.JavaPsiImplementationHelper
 import com.intellij.psi.impl.source.tree.CoreJavaASTFactory
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.parsing.KotlinParserDefinition
-import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtVisitorVoid
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.script.KotlinScriptDefinition
 import org.jetbrains.kotlin.script.ScriptDefinitionProvider
 import org.jetbrains.plugins.groovy.GroovyFileType
 import org.jetbrains.plugins.groovy.lang.parser.GroovyParserDefinition
 import org.jetbrains.plugins.groovy.lang.psi.GroovyElementVisitor
 import org.jetbrains.plugins.groovy.lang.psi.GroovyPsiElementVisitor
-import org.jetbrains.plugins.groovy.lang.psi.api.statements.typedef.GrClassDefinition
+import org.jetbrains.plugins.groovy.lang.psi.api.statements.typedef.members.GrMethod
 import java.io.File
 
 internal data class PsiSetup(
@@ -90,25 +90,29 @@ fun main(args: Array<String>) {
             return SingleRootFileViewProvider(psiManager, vFile!!).allFiles.first()
         }
 
-        createFile("src/main.kt").acceptChildren(object : KtVisitorVoid() {
-            override fun visitClass(klass: KtClass) {
-                println(klass.name)
-                super.visitClass(klass)
+        createFile("src/main.kt").acceptChildren(object : KtTreeVisitorVoid() {
+            override fun visitNamedFunction(function: KtNamedFunction) {
+                println(function.name)
+                super.visitNamedFunction(function)
             }
         })
 
         createFile("testData/test.groovy").acceptChildren(object : GroovyPsiElementVisitor(object : GroovyElementVisitor() {
-            override fun visitClassDefinition(classDefinition: GrClassDefinition) {
-                println(classDefinition.name)
-                super.visitClassDefinition(classDefinition)
+            override fun visitMethod(method: GrMethod) {
+                println(method.name)
+                super.visitMethod(method)
             }
-        }){})
+        }) {
+            override fun visitElement(element: PsiElement?) {
+                super.visitElement(element)
+                element?.acceptChildren(this)
+            }
+        })
 
-        val createFile = createFile("testData/test.java")
-        createFile.acceptChildren(object : JavaElementVisitor() {
-            override fun visitClass(aClass: PsiClass?) {
-                println(aClass?.name)
-                super.visitClass(aClass)
+        createFile("testData/test.java").acceptChildren(object : JavaRecursiveElementWalkingVisitor() {
+            override fun visitMethod(method: PsiMethod?) {
+                println(method?.name)
+                super.visitMethod(method)
             }
         })
     }
